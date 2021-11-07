@@ -24,25 +24,37 @@ int main()
     client = socket(AF_INET, SOCK_STREAM, 0);
 
     if (client < 0) 
+    {
+        cout << "\nError establishing socket..." << endl;
         exit(1);
+    }
 
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = htons(INADDR_ANY);
     server_addr.sin_port = htons(portNum);
 
 
-    bind(client, (struct sockaddr*)&server_addr,sizeof(server_addr)); 
-    
+    if ((bind(client, (struct sockaddr*)&server_addr,sizeof(server_addr))) < 0) 
+    {
+        cout << "> bind() failed by exception" << endl;
+        return -1;
+    }
 
     size = sizeof(server_addr);
     cout << "echo-server is activated" << endl;
 
-    listen(client, 1);
+    if (listen(client, 1) == -1){
+        cout<< "> listen() failed and program terminated" <<endl;
+        close(server);
+    }
 
 
     int clientCount = 1;
     server = accept(client,(struct sockaddr *)&server_addr,&size);
 
+    if (server < 0) 
+        cout << "=> Error on accepting..." << endl;
+    
     cout << "Client connected by IP address 127.0.0.1 with Port number " << portNum << endl;
     while (server > 0) 
     {
