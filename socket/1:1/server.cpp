@@ -13,7 +13,7 @@ int main()
 {
 
     int client, server;
-    int portNum = 65456;
+    int portNum = 65457;
     bool isExit = false;
     int bufsize = 1024;
     char buffer[bufsize];
@@ -29,9 +29,6 @@ int main()
         exit(1);
     }
 
-    cout << "\n=> Socket server has been created..." << endl;
-
-
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = htons(INADDR_ANY);
     server_addr.sin_port = htons(portNum);
@@ -44,7 +41,7 @@ int main()
     }
 
     size = sizeof(server_addr);
-    cout << "=> Looking for clients..." << endl;
+    cout << "echo-server is activated" << endl;
 
     listen(client, 1);
 
@@ -54,55 +51,30 @@ int main()
 
     if (server < 0) 
         cout << "=> Error on accepting..." << endl;
-
+    
+    cout << "Client connected by IP address 127.0.0.1 with Port number " << portNum << endl;
     while (server > 0) 
     {
-        strcpy(buffer, "=> Server connected...\n");
         send(server, buffer, bufsize, 0);
-        cout << "=> Connected with the client #" << clientCount << ", you are good to go..." << endl;
-        cout << "\n=> Enter # to end the connection\n" << endl;
-
-        cout << "Client: ";
-        do {
+        do{
+            cout << "received: ";
             recv(server, buffer, bufsize, 0);
-            cout << buffer << " ";
-            if (*buffer == '#') {
-                *buffer = '*';
+            cout << buffer << endl;
+            if(strcmp(buffer, "quit") == 0){
                 isExit = true;
+                break;
             }
-        } while (*buffer != '*');
+            send(server, buffer, bufsize, 0);
 
-        do {
-            cout << "\nServer: ";
-            do {
-                cin >> buffer;
-                send(server, buffer, bufsize, 0);
-                if (*buffer == '#') {
-                    send(server, buffer, bufsize, 0);
-                    *buffer = '*';
-                    isExit = true;
-                }
-            } while (*buffer != '*');
+        } while(!isExit);
 
-            cout << "Client: ";
-            do {
-                recv(server, buffer, bufsize, 0);
-                cout << buffer << " ";
-                if (*buffer == '#') {
-                    *buffer == '*';
-                    isExit = true;
-                }
-            } while (*buffer != '*');
-        } while (!isExit);
-
-    
-        cout << "\n\n=> Connection terminated with IP " << inet_ntoa(server_addr.sin_addr);
         close(server);
-        cout << "\nGoodbye..." << endl;
-        isExit = false;
-        exit(1);
-    }
 
+        isExit = false;
+        break;
+    }
+    cout << "echo-server is de-activated" <<endl;
     close(client);
+    
     return 0;
 }
