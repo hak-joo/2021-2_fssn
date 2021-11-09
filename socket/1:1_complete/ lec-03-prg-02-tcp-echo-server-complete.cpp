@@ -12,7 +12,7 @@ using namespace std;
 int main()
 {
 
-    int client, server;
+    int server, client;
     int portNum = 65457;
     bool isExit = false;
     int bufsize = 1024;
@@ -21,9 +21,9 @@ int main()
     struct sockaddr_in server_addr;
     socklen_t size;
 
-    client = socket(AF_INET, SOCK_STREAM, 0);
+    server = socket(AF_INET, SOCK_STREAM, 0);
 
-    if (client < 0) 
+    if (server < 0) 
     {
         cout << "\nError establishing socket..." << endl;
         exit(1);
@@ -34,7 +34,7 @@ int main()
     server_addr.sin_port = htons(portNum);
 
 
-    if ((bind(client, (struct sockaddr*)&server_addr,sizeof(server_addr))) < 0) 
+    if ((bind(server, (struct sockaddr*)&server_addr,sizeof(server_addr))) < 0) 
     {
         cout << "> bind() failed by exception" << endl;
         return -1;
@@ -43,41 +43,41 @@ int main()
     size = sizeof(server_addr);
     cout << "echo-server is activated" << endl;
 
-    if (listen(client, 1) == -1){
+    if (listen(server, 1) == -1){
         cout<< "> listen() failed and program terminated" <<endl;
-        close(server);
+        close(client);
     }
 
 
     int clientCount = 1;
-    server = accept(client,(struct sockaddr *)&server_addr,&size);
+    client = accept(server,(struct sockaddr *)&server_addr,&size);
 
-    if (server < 0) 
+    if (client < 0) 
         cout << "=> Error on accepting..." << endl;
     
     cout << "Client connected by IP address 127.0.0.1 with Port number " << portNum << endl;
-    while (server > 0) 
+    while (client > 0) 
     {
-        send(server, buffer, bufsize, 0);
+        send(client, buffer, bufsize, 0);
         do{
             cout << "received: ";
-            recv(server, buffer, bufsize, 0);
+            recv(client, buffer, bufsize, 0);
             cout << buffer << endl;
             if(strcmp(buffer, "quit") == 0){
                 isExit = true;
                 break;
             }
-            send(server, buffer, bufsize, 0);
+            send(client, buffer, bufsize, 0);
 
         } while(!isExit);
 
-        close(server);
+        close(client);
 
         isExit = false;
         break;
     }
     cout << "echo-server is de-activated" <<endl;
-    close(client);
+    close(server);
     
     return 0;
 }
