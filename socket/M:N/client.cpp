@@ -8,8 +8,12 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <netdb.h>
+#include <thread>
+
 
 using namespace std;
+
+void* ReceiveHandler(void*);
 
 int main()
 {
@@ -21,6 +25,7 @@ int main()
     char* ip = "127.0.0.1";
 
     struct sockaddr_in server_addr;
+    pthread_t thread_id=0;
 
     client = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -35,30 +40,48 @@ int main()
     server_addr.sin_port = htons(portNum);
     server_addr.sin_addr.s_addr = inet_addr(ip);
   
-
-    connect(client,(struct sockaddr *)&server_addr, sizeof(server_addr));
-
+    int *csock = &client;
+    if(connect(*csock,(struct sockaddr *)&server_addr, sizeof(server_addr)) != -1){
+        pthread_create(&thread_id,0, &ReceiveHandler, (void*)csock);
+        pthread_detach(thread_id);
+    }
+    
     recv(client, buffer, bufsize, 0);
     std::sprintf(buffer, "%d", portNum); //portNum을 보내줌.
     send(client, buffer, bufsize, 0);
     cout<< "echo-client is activated" << endl;
 
-    // Once it reaches here, the client can send a message first.
 
     do {
         cin >> buffer;
         send(client, buffer, bufsize, 0);
         if(strcmp(buffer, "quit") == 0 ){
-            isExit = true;
-            break;
+            cout << "echo-client is de-activated" <<endl;
+            close(client);
+            exit(1);
         }
-        recv(client, buffer, bufsize, 0);
-        
-        cout<<"received: " << buffer << endl;
-
     } while(!isExit);
 
-    cout << "echo-client is de-activated" <<endl;
-    close(client);
-    return 0;
+     return 0;
+}
+
+void* ReceiveHandler(void* lp){
+    int *csock = (int*)lp;
+    char buffer[1024];
+    int bufSize = 1024;
+    int bytecount;
+    bool isExit = false;
+    
+    do{
+        recv(*csock, buffer, bufSize, 0);
+        if(strcmp(buffer, "") != 0 ){
+            std::cout<<"> received: "<< buffer << std::endl;
+        }
+        buffer[0] = '\0'; //버퍼 비우기
+        if(csock == NULL){
+            isExit = true;
+            break;
+        }   
+    } while(!isExit);
+    isExit = false;
 }
