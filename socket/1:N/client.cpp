@@ -14,7 +14,7 @@ using namespace std;
 int main()
 {
     int client;
-    int portNum = 65457; // NOTE that the port number is same for both client and server
+    int portNum = 65457;
     bool isExit = false;
     int bufsize = 1024;
     char buffer[bufsize];
@@ -35,15 +35,9 @@ int main()
     server_addr.sin_port = htons(portNum);
     server_addr.sin_addr.s_addr = inet_addr(ip);
   
-
     connect(client,(struct sockaddr *)&server_addr, sizeof(server_addr));
 
-    recv(client, buffer, bufsize, 0);
-    std::sprintf(buffer, "%d", portNum); //portNum을 보내줌.
-    send(client, buffer, bufsize, 0);
     cout<< "echo-client is activated" << endl;
-
-    // Once it reaches here, the client can send a message first.
 
     do {
         cin >> buffer;
