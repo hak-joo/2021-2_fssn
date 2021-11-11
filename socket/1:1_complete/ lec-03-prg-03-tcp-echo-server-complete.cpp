@@ -58,7 +58,6 @@ int main()
     cout << "Client connected by IP address 127.0.0.1 with Port number " << portNum << endl;
     while (client > 0) 
     {
-        send(client, buffer, bufsize, 0);
         do{
             cout << "received: ";
             recv(client, buffer, bufsize, 0);
