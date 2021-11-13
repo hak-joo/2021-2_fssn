@@ -18,7 +18,7 @@ void* ReceiveHandler(void*);
 int main()
 {
     int client;
-    int portNum = 65457; // NOTE that the port number is same for both client and server
+    int portNum = 65457;
     bool isExit = false;
     int bufsize = 1024;
     char buffer[bufsize];
@@ -45,10 +45,6 @@ int main()
         pthread_create(&thread_id,0, &ReceiveHandler, (void*)csock);
         pthread_detach(thread_id);
     }
-    
-    recv(client, buffer, bufsize, 0);
-    std::sprintf(buffer, "%d", portNum); //portNum을 보내줌.
-    send(client, buffer, bufsize, 0);
     cout<< "echo-client is activated" << endl;
 
 

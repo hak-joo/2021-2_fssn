@@ -54,14 +54,15 @@ int main()
 
     int clientCount = 1;
     client = accept(server,(struct sockaddr *)&server_addr,&size);
+    
     clientNum++;
     if (client < 0) 
         cout << "=> Error on accepting..." << endl;
     
-    cout << "Client connected by IP address 127.0.0.1 with Port number " << portNum << endl;
+    cout << "Client connected by IP address 127.0.0.1 with Port number ";
+    std::cout<< ntohs(server_addr.sin_port)<<std::endl;
     while (1) 
     {
-        send(client, buffer, bufsize, 0);
         while(1){
             cout << "received: ";
             recv(client, buffer, bufsize, 0);
@@ -74,7 +75,10 @@ int main()
         }
         client = accept(server,(struct sockaddr *)&server_addr,&size);
         if(client >0){
-            cout << "Client connected by IP address 127.0.0.1 with Port number " << portNum << endl;
+            cout << "Client connected by IP address 127.0.0.1 with Port number ";
+            std::cout<< ntohs(server_addr.sin_port)<<std::endl;
+        } else {
+            isExit = true;
         }
         if(isExit)
             close(client);

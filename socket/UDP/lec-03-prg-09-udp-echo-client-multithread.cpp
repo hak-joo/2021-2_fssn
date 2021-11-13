@@ -14,6 +14,7 @@
 using namespace std;
 
 void* ReceiveHandler(void*);
+struct sockaddr_in server_addr, client_addr;
 
 int main()
 {
@@ -25,7 +26,7 @@ int main()
     char buffer[bufsize];
     char* ip = "127.0.0.1";
 
-    struct sockaddr_in server_addr, client_addr;
+    
     pthread_t thread_id=0;
 
     client = socket(AF_INET, SOCK_DGRAM, 0);
@@ -40,26 +41,26 @@ int main()
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(portNum);
     server_addr.sin_addr.s_addr = inet_addr(ip);
-  
+    buffer[0] = '\0';
     int *csock = &client;
-    // pthread_create(&thread_id,0, &ReceiveHandler, (void*)csock);
-    
-    cout<< "echo-client is activated" << endl;
 
+    cout<< "echo-client is activated" << endl;
+    socklen_t size = sizeof(client_addr);
+    getsockname(client, (struct sockaddr *)&client_addr, &size);
+    pthread_create(&thread_id, 0, &ReceiveHandler, (void*)csock);
+    
     do {
-        cout<<"input: ";
         cin >> buffer;
         sendto(client, buffer, bufsize, 0, (struct sockaddr*)&server_addr, sizeof(server_addr));
+        
         if(strcmp(buffer, "quit") == 0 ){
             cout << "echo-client is de-activated" <<endl;
             close(client);
             exit(1);
         }
-        recvfrom(client, buffer, bufsize, 0, (struct sockaddr*)&client_addr, &len);
-        cout<< "> received: " << buffer<<endl;
 
     } while(!isExit);
-    // pthread_detach(thread_id);
+    pthread_detach(thread_id);
     close(client);
     return 0;
 }
@@ -70,9 +71,9 @@ void* ReceiveHandler(void* lp){
     int bufSize = 1024;
     int bytecount;
     bool isExit = false;
-    
+    socklen_t len = sizeof(client_addr);    
     do{
-        recv(*csock, buffer, bufSize, 0);
+        recvfrom(*csock, buffer, bufSize, 0, (struct sockaddr*)&client_addr, &len);
         if(strcmp(buffer, "") != 0 ){
             std::cout<<"> received: "<< buffer << std::endl;
         }

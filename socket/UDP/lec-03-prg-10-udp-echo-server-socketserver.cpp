@@ -19,12 +19,9 @@ static int threadNum = 0;
 int main(){
 
     int portNum = 65457;
-
     struct sockaddr_in server_addr, client_addr;
-
     int server;
-    int * p_int ;
-    int err;
+
 
     socklen_t addr_size = 0;
     int* csock;

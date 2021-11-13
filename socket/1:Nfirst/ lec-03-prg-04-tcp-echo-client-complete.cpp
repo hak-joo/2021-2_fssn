@@ -36,7 +36,6 @@ int main()
     server_addr.sin_addr.s_addr = inet_addr(ip);
   
     connect(client,(struct sockaddr *)&server_addr, sizeof(server_addr));
-
     cout<< "echo-client is activated" << endl;
 
     do {

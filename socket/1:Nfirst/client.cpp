@@ -39,12 +39,7 @@ int main()
 
     connect(client,(struct sockaddr *)&server_addr, sizeof(server_addr));
 
-    recv(client, buffer, bufsize, 0);
-
-
     cout<< "echo-client is activated" << endl;
-
-    // Once it reaches here, the client can send a message first.
 
     do {
         cin >> buffer;
