@@ -23,7 +23,7 @@ class ClientTask{
             string input;
             zmq::message_t msg;
             zmq::message_t iden;
-            
+
             zmq::pollitem_t p[] = {
                 {socket, 0, ZMQ_POLLIN, 0}
             };
@@ -31,12 +31,13 @@ class ClientTask{
             
             while(1) {
                 usleep(1000000);
-                int rc = zmq::poll(p ,1 ,1);
+                int rc = zmq::poll(p,1,100);
                 cout<<"rc:: "<<rc<<endl;
-               
+
                 if(p[0].revents & ZMQ_POLLIN){
-                    socket.recv(&iden);
-                    socket.recv(&msg);
+                    
+                    socket.recv(msg);
+
                     cout<<"Client #"<< identity<< " "<< string(static_cast<char*>(msg.data()), msg.size()) << endl;
                 }
                 else{
@@ -46,7 +47,8 @@ class ClientTask{
 
                     zmq::message_t msg(input.size());
                     memcpy(msg.data(), input.data(), input.length());
-                    socket.send(msg, 1);
+                    socket.send(msg, ZMQ_SNDMORE);
+                    socket.send(iden);
                     
                 }                
             }
