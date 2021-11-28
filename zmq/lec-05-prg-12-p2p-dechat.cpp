@@ -1,7 +1,10 @@
 #include <time.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/ioctl.h>
 #include <netinet/in.h>
+#include <net/if.h>
+#include <stdio.h>
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -13,16 +16,22 @@
 #include <unistd.h>
 #include <vector>
 #include <thread>
+#include <ctime>
 
 using namespace std;
 
+
+
+
 string get_local_ip();
 string search_nameserver(string ip_mask, string local_ip_addr, string port_nameserver);
+void beacon_nameserver(string local_ip_addr, string port_nameserver);
 void user_manager_nameserver(string local_ip_addr, string port_subscribe);
 void relay_server_nameserver(string local_ip_addr, string port_chat_publisher, string port_chat_collector);
-
+vector<string> split(string s, string divid);
 
 int main(int argc, char* argv[]){
+    cout<<"start";
     string ip_addr_p2p_server ="";
     string port_nameserver = "9001";
     string port_chat_publisher = "9002";
@@ -31,36 +40,36 @@ int main(int argc, char* argv[]){
 
     string user_name = argv[1];
 
+
     string ip_addr = get_local_ip();
-    
-    char *cstr = new char[ip_addr.length() + 1];
-    strcpy(cstr, ip_addr.c_str());
-    // do stuff
-    delete [] cstr;
-    
-    char *temp = strtok(cstr,"."); //공백을 기준으로 문자열 자르기
-    
-    while (temp != NULL) { //널이 아닐때까지 반복
-        printf("%s\n",temp); // 출력
-        temp = strtok(NULL, " ");	//널문자를 기준으로 다시 자르기
-    }
+   
+    vector<string> temp_list = split(ip_addr, ".");
 
-    string ip_mask = temp;
 
+    string ip_mask = temp_list[0] + "." + temp_list[1] + "." + temp_list[2] + "."; 
     cout<<"searching for p2p server."<<endl;
     string name_server_ip_addr = search_nameserver(ip_mask, ip_addr, port_nameserver);
     if(name_server_ip_addr == ""){
         ip_addr_p2p_server = ip_addr;
         cout<<"p2p server is not found, and p2p server mode is activated."<<endl;
-        thread beacon_thread(beacon_nameserver, (ip_addr, port_nameserver));
-        beacon_thread.join();
+        // thread beacon_thread(beacon_nameserver,((ip_addr, port_nameserver)));
+        std::thread beacon_thread([&ip_addr, &port_nameserver](){
+            beacon_nameserver(ip_addr, port_nameserver);
+        });
+        // beacon_thread.join();
         cout<<"p2p beacon server is activated." << endl;
 
-        thread db_thread(user_manager_nameserver, (ip_addr, port_subscribe));
+        // thread db_thread(user_manager_nameserver, (ip_addr, port_subscribe));
+        std::thread db_thread([&ip_addr, &port_subscribe](){
+            user_manager_nameserver(ip_addr, port_subscribe);
+        });
         db_thread.join();
         cout<<"p2p subscriber database server is activated."<<endl;
 
-        thread relay_thread(relay_server_nameserver, (ip_addr, port_chat_publisher, port_chat_collector));
+        // thread relay_thread(relay_server_nameserver, (ip_addr, port_chat_publisher, port_chat_collector));
+        std::thread relay_thread([&ip_addr, &port_chat_publisher, &port_chat_collector](){
+            relay_server_nameserver(ip_addr, port_chat_publisher, port_chat_collector);
+        });
         relay_thread.join();
         cout<<"p2p message relay server is activated." <<endl;        
     } else{
@@ -71,14 +80,21 @@ int main(int argc, char* argv[]){
 
     zmq::context_t db_client_context;
     zmq::socket_t db_client_socket(db_client_context, zmq::socket_type::req);
-    zmq::message_t db_msg_t;
+    
+    cout<<"db_client"<< "tcp://"+ip_addr_p2p_server+":"+port_subscribe<<endl;
     db_client_socket.connect("tcp://"+ip_addr_p2p_server+":"+port_subscribe);
     string db_msg = ip_addr + ":" + user_name;
+ 
+    zmq::message_t db_msg_t{db_msg.length()};
+    zmq::message_t db_msg_rep;
+    cout<<db_msg<<endl;
     memcpy(db_msg_t.data(), db_msg.data(), db_msg.size());
     db_client_socket.send(db_msg_t);
 
-    db_client_socket.recv(db_msg_t);
-    if(string(static_cast<char*>(db_msg_t.data()), db_msg_t.size()) == "ok"){
+    db_client_socket.recv(db_msg_rep);
+    cout<<"result:: "<< string(static_cast<char*>(db_msg_rep.data()), db_msg_rep.size())<<endl;
+
+    if(string(static_cast<char*>(db_msg_rep.data()), db_msg_rep.size()) == "ok"){
         cout<<"user registration to p2p server completed"<<endl;
     } else {
         cout<<"user registration to p2p server failed"<<endl;
@@ -87,7 +103,7 @@ int main(int argc, char* argv[]){
 
     zmq::context_t relay_client;
     zmq::socket_t p2p_rx(relay_client, zmq::socket_type::sub);
-    p2p_rx.setsockopt(ZMQ_SUBSCRIBE, "b'RELAY");
+    p2p_rx.setsockopt(ZMQ_SUBSCRIBE, "RELAY", sizeof("RELAY"));
     p2p_rx.connect("tcp://"+ip_addr_p2p_server+ ":"+port_chat_publisher);
     zmq::socket_t p2p_tx(relay_client, zmq::socket_type::push);
     p2p_tx.connect("tcp://"+ip_addr_p2p_server+ ":"+port_chat_publisher);
@@ -114,7 +130,7 @@ int main(int argc, char* argv[]){
                 string msg = "("+user_name+","+ip_addr+":ON)";
                 memcpy(p2p_msg.data(), msg.data(), msg.size());
                 p2p_tx.send(p2p_msg);
-                cout<<"p2p-sed::==>> " << msg<<endl;
+                cout<<"p2p-send::==>> " << msg<<endl;
             } else{
                 usleep(3000000);
                 string msg = "("+user_name+","+ip_addr+":OFF)";
@@ -128,73 +144,110 @@ int main(int argc, char* argv[]){
     db_client_socket.close();
     p2p_rx.close();
     p2p_tx.close();
-    db_client_context.~context_t();
-    relay_client.~context_t();
+    // db_client_context.~context_t();
+    // relay_client.~context_t();
 
     return 0;
 }
-
 string get_local_ip(){
-    struct sockaddr_in sock_addr;
-    int sock;
-    sock = socket(AF_INET, SOCK_STREAM, 0);
-    sock_addr.sin_family = AF_INET;
-    sock_addr.sin_port = htons(80);
-    sock_addr.sin_addr.s_addr = inet_addr("8.8.8.8");
-    try{
-        connect(sock,(struct sockaddr *)&sock_addr, sizeof(sock_addr));
-        socklen_t size = sizeof(sock_addr);
+    int sock = socket(PF_INET, SOCK_DGRAM, 0);
+    sockaddr_in loopback;
 
-        return to_string(getsockname(sock,(struct sockaddr *)&sock_addr, &size));
-    } catch(char*){
+    if (sock == -1) {
+        std::cerr << "Could not socket\n";
         return "127.0.0.1";
-    } 
+    }
+
+    std::memset(&loopback, 0, sizeof(loopback));
+    loopback.sin_family = AF_INET;
+    loopback.sin_addr.s_addr = 1337;   // can be any IP address
+    loopback.sin_port = htons(9);      // using debug port
+
+    if (connect(sock, reinterpret_cast<sockaddr*>(&loopback), sizeof(loopback)) == -1) {
+        close(sock);
+        return "127.0.0.1";
+    }
+
+    socklen_t addrlen = sizeof(loopback);
+    if (getsockname(sock, reinterpret_cast<sockaddr*>(&loopback), &addrlen) == -1) {
+        close(sock);
+        return "127.0.0.1";
+    }
+    int name = getsockname(sock, reinterpret_cast<sockaddr*>(&loopback), &addrlen);
     close(sock);
+
+    char buf[INET_ADDRSTRLEN];
+    if (inet_ntop(AF_INET, &loopback.sin_addr, buf, INET_ADDRSTRLEN) == 0x0) {
+        return "127.0.0.1";
+    } else {
+        return buf;
+    }
 }
 
 string search_nameserver(string ip_mask, string local_ip_addr, string port_nameserver){
+    
+    zmq::message_t msg;
     zmq::context_t context;
     zmq::socket_t req = zmq::socket_t(context, zmq::socket_type::sub);
-
-    zmq::message_t msg;
-    for (int i=0; i<255; i++){
-        string target_ip_addr = "tcp://"+ip_mask+"." + to_string(i) + port_nameserver;
-        if (target_ip_addr != local_ip_addr || target_ip_addr == local_ip_addr){
-            req.connect(target_ip_addr);
-        }
+    for(int i=0; i<255; i++){
+        string target_ip_addr = "tcp://"+ip_mask + to_string(i)+ ":" + port_nameserver;
+        // if (target_ip_addr != local_ip_addr || target_ip_addr == local_ip_addr){
+        
+        
+        req.connect(target_ip_addr);
+        // }
         req.setsockopt(ZMQ_RCVTIMEO, 2000);
-        req.setsockopt(ZMQ_SUBSCRIBE, "NAMESERVER");
+        req.setsockopt(ZMQ_SUBSCRIBE, "NAMESERVER", 10);
+        
+        
     }
-
     req.recv(msg);
     string res = string(static_cast<char*>(msg.data()), msg.size());
-    bool chk = true;
-    string nameserver = "NAMESERVER";
-    if(res.size() >9){
-        for (int i=0; i<10; i++){
-        if(res[i] != nameserver[i])
-            chk = false;
+    if(res.size() >0){
+        cout<<"Res:: "<< res<<endl;
+        vector<string> res_list= split(res, ":");
+        if(res_list[0] == "NAMESERVER"){
+            return res_list[1];
         }
-    } else{
-        return "";
     }
-    if (chk){
-        return res;
-    }
+
     return "";
 
+    // try{
+    //     req.recv(msg);
+
+    //     string res = string(static_cast<char*>(msg.data()), msg.size());
+    //     cout<<"res:: "<< res<<endl;
+    //     vector<string> res_list= split(res, ":");
+    //     if(res.size() > 0){
+            
+    //     }
+    //     if(res_list.size() > 0){
+    //         if(res_list[0] == "NAMESERVER"){
+    //             return res_list[1];
+    //         } else{
+    //             return "";
+    //         }
+    //     }
+    //     return "";
+    // } catch(string msg){
+    //     return "";
+    // }
+    // return "";
 }
 
 void beacon_nameserver(string local_ip_addr, string port_nameserver){
     zmq::context_t context;
     zmq::socket_t socket(context, zmq::socket_type::pub);
-    zmq::message_t msg;
+    
     socket.bind("tcp://"+local_ip_addr+":"+port_nameserver);
+    string message = "NAMESERVER:"+local_ip_addr;
     while(1){
         usleep(1000000);
-        string message = "NAMESERVER:"+local_ip_addr;
+        zmq::message_t msg{message.length()};
         memcpy(msg.data(), message.data(), message.size());
         socket.send(msg);
+        
     }
 }
 
@@ -212,12 +265,14 @@ void user_manager_nameserver(string local_ip_addr, string port_subscribe){
         string user_req = string(static_cast<char*>(msg.data()), msg.size());
         user_db.push_back(user_req);
         cout<<"user registration "<< user_req;
-        memcpy(msg.data(), sendMsg.data(), sendMsg.size());
-        socket.send(msg);
+        zmq::message_t rep_msg{sendMsg.length()};
+        memcpy(rep_msg.data(), sendMsg.data(), sendMsg.size());
+        socket.send(rep_msg);
     }
 }
 
 void relay_server_nameserver(string local_ip_addr, string port_chat_publisher, string port_chat_collector){
+    cout<<"relay thread started:: "<<endl;
     zmq::context_t context;
     zmq::socket_t publisher(context, zmq::socket_type::pub);
     publisher.bind("tcp://"+local_ip_addr+":"+port_chat_collector);
@@ -229,9 +284,19 @@ void relay_server_nameserver(string local_ip_addr, string port_chat_publisher, s
         collector.recv(msg);
         string message = string(static_cast<char*>(msg.data()), msg.size());
         cout<<"p2p-relay:<==>"<< message<<endl;
-        message = "REALY:" + message;
+        message = "RELAY:" + message;
         memcpy(msg.data(), message.data(), message.size());
         publisher.send(msg);
     }
 
+}
+
+vector<string> split(string s, string divid){
+    vector<string> v;
+    char *c = strtok((char*)s.c_str(), divid.c_str());
+    while(c){
+        v.push_back(c);
+        c=strtok(NULL, divid.c_str());
+    }
+    return v;
 }
