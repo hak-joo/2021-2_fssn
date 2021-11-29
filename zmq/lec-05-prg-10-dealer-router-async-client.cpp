@@ -31,14 +31,13 @@ class ClientTask{
             
             while(1) {
                 usleep(1000000);
-                int rc = zmq::poll(p,1,100);
-                cout<<"rc:: "<<rc<<endl;
+                int rc = zmq::poll(p, 1, 100);
 
                 if(p[0].revents & ZMQ_POLLIN){
                     
                     socket.recv(msg);
 
-                    cout<<"Client #"<< identity<< " "<< string(static_cast<char*>(msg.data()), msg.size()) << endl;
+                    cout<< identity<< " received: "<< string(static_cast<char*>(msg.data()), msg.size()) << endl;
                 }
                 else{
                     reqs += 1;
@@ -47,8 +46,7 @@ class ClientTask{
 
                     zmq::message_t msg(input.size());
                     memcpy(msg.data(), input.data(), input.length());
-                    socket.send(msg, ZMQ_SNDMORE);
-                    socket.send(iden);
+                    socket.send(msg);
                     
                 }                
             }

@@ -19,21 +19,21 @@ class ServerWorker{
             zmq::socket_t worker(context, zmq::socket_type::dealer);
             worker.connect("inproc://backend");
             cout<<"Worker#"<< id<< " started"<<endl;
-            zmq::message_t msg;
-            zmq::message_t iden;
+            
             while(1){
-                
-                worker.recv(&iden, ZMQ_RCVMORE);
-                worker.recv(&msg);
-                string received = string(static_cast<char*>(msg.data()), msg.size());
-                string identity = string(static_cast<char*>(iden.data()), iden.size());
-                cout<<"Worker#"<<id<<" received "<< received<<" from "<<identity<<endl;
-                worker.send(msg, ZMQ_SNDMORE);
-                worker.send(iden);
+                zmq::message_t msg;
+                zmq::message_t iden;
 
-                // zmq::message_t sendMsg(received.size());
-                // memcpy(sendMsg.data(), received.data(), received.size());
-                // worker.send(&sendMsg, 0);
+                worker.recv(iden);
+                string identity = string(static_cast<char*>(iden.data()), iden.size());
+                
+                worker.recv(msg);
+                string received = string(static_cast<char*>(msg.data()), msg.size());
+                cout<<"Worker#"<<id<<" received "<< received<<" from '"<<identity<<"'"<<endl;
+                memcpy(msg.data(), received.data(), received.size());
+                memcpy(iden.data(), "",0);
+                worker.send(iden, ZMQ_SNDMORE);
+                worker.send(msg);
 
             }
         }
