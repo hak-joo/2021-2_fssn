@@ -18,6 +18,7 @@
 
 
 ### Execute Example
+#### - 작성된 문서는 M1 mac을 기준으로 되어 있으며, 이외의 mac을 사용하는 경우 /opt/homebrew 가 아닌, /usr/local ... 의 경로를 사용하여야 합니다.
 #### - Socket
 <img width="1038" alt="execute_example_socket" src="https://user-images.githubusercontent.com/30286254/144024858-1df95e0b-8567-419e-9429-367c290f9e97.png">
 
@@ -28,7 +29,6 @@
 
 ### File Execute Table
 #### - 작성된 문서는 M1 mac을 기준으로 되어 있으며, 이외의 mac을 사용하는 경우 /opt/homebrew 가 아닌, /usr/local ... 의 경로를 사용하여야 합니다.
-
 #### - Socket
 <img width="899" alt="스크린샷 2021-11-30 오후 6 59 48" src="https://user-images.githubusercontent.com/30286254/144026057-a1697cf5-6167-4ba4-99ec-9344c4b431fc.png">
 
