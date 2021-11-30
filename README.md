@@ -12,10 +12,28 @@
 
 ### Download Code
 > git clone https://github.com/leehaakjoo/2021-2_fssn
+* cd 2021-2_fssn/socket :: using socket
+* cd 2021-2_fssn/zmq :: using zmq
+* brew install zeromq
+
 
 ### Execute Example
+#### - Socket
+<img width="1038" alt="execute_example_socket" src="https://user-images.githubusercontent.com/30286254/144024858-1df95e0b-8567-419e-9429-367c290f9e97.png">
 
 
+#### - ZMQ
+<img width="1027" alt="execute_example_zmq" src="https://user-images.githubusercontent.com/30286254/144025057-3df24cdd-deff-436e-9bce-484974ada8e3.png">
+
+
+### File Execute Table
+#### - 작성된 문서는 M1 mac을 기준으로 되어 있으며, 이외의 mac을 사용하는 경우 /opt/homebrew 가 아닌, /usr/local ... 의 경로를 사용하여야 합니다.
+
+#### - Socket
+<img width="899" alt="스크린샷 2021-11-30 오후 6 59 48" src="https://user-images.githubusercontent.com/30286254/144026057-a1697cf5-6167-4ba4-99ec-9344c4b431fc.png">
+
+#### - ZMQ
+<img width="908" alt="스크린샷 2021-11-30 오후 7 01 20" src="https://user-images.githubusercontent.com/30286254/144026302-687c908a-e7f2-4bab-aded-c7f42b8090eb.png">
 
 ### Documents
 * project_description.pdf : 프로젝트 개요 및 코드 설명, 느낀점
